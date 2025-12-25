@@ -1,31 +1,33 @@
 const jwt = require("jsonwebtoken");
 
-const SECRET_KEY = process.env.PRIVATE_KEY;
-
 const authMiddleware = async (req, res, next) => {
-  const authToken = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-  if (!authToken) {
+  if (!authHeader) {
     return res.status(401).json({ message: "Authorization token is required" });
   }
 
-  if (!SECRET_KEY) {
-    throw new Error("PRIVATE_KEY environment variable is not defined");
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Invalid token format" });
   }
 
-  const decoded = jwt.decode(authToken.split(" ")[1]);
-  console.log(decoded);
+  if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is not defined");
+    return res.status(500).json({ message: "Server configuration error" });
+  }
 
-  jwt.verify(authToken.split(" ")[1], SECRET_KEY, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: "Invalid token" });
-    }
-
-    req.user = decoded;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { id: decoded.id };  // Only attach necessary user data
     next();
-  });
+  } catch (error) {
+    console.error("Token verification failed:", error.message);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    return res.status(403).json({ message: "Invalid token" });
+  }
 };
 
-module.exports = {
-  authMiddleware,
-};
+module.exports = { authMiddleware };

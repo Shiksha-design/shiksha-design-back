@@ -37,7 +37,7 @@ const Responses = {
   notFound: {
     statusCode: 404,
     message: "not found",
-    clientMessage: { Message: "Email not found" },
+    clientMessage: { Message: 'Data not found' },
   },
   userNotFound: {
     statusCode: 404,

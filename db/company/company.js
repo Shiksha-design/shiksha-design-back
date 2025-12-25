@@ -1,10 +1,10 @@
 const { Responses } = require('../../utils/responses');
-const {{pascalCase module}} = require('../models/{{pascalCase module}}'); // mongoose model
+const Company = require('../../models/companyModel'); // mongoose model
 
 // GET ALL
-const getAll{{pascalCase module}}DB = async () => {
+const getAllCompanyDB = async () => {
   try {
-    const data = await {{pascalCase module}}.find({isDeleted : false}).lean();
+    const data = await Company.find({isDeleted : false}).lean();
     return data;
   } catch (error) {
     console.error(error);
@@ -13,9 +13,9 @@ const getAll{{pascalCase module}}DB = async () => {
 };
 
 // GET BY ID
-const get{{pascalCase module}}ByIdDB = async (id) => {
+const getCompanyByIdDB = async (id) => {
   try {
-    const data = await {{pascalCase module}}.findOne({ _id: id }).lean();
+    const data = await Company.findOne({ _id: id }).lean();
 
     if (!data) {
       return [];
@@ -29,9 +29,9 @@ const get{{pascalCase module}}ByIdDB = async (id) => {
 };
 
 // CREATE
-const create{{pascalCase module}}DB = async (payload) => {
+const createCompanyDB = async (payload) => {
   try {
-    const data = await {{pascalCase module}}.create({
+    const data = await Company.create({
       ...payload
     });
 
@@ -47,9 +47,9 @@ const create{{pascalCase module}}DB = async (payload) => {
 };
 
 // UPDATE BY ID
-const update{{pascalCase module}}ByIdDB = async (id, payload) => {
+const updateCompanyByIdDB = async (id, payload) => {
   try {
-    const result = await {{pascalCase module}}.updateOne(
+    const result = await Company.updateOne(
       { _id: id },
       { $set: payload }
     );
@@ -66,9 +66,9 @@ const update{{pascalCase module}}ByIdDB = async (id, payload) => {
 };
 
 // DELETE BY ID
-const delete{{pascalCase module}}ByIdDB = async (id) => {
+const deleteCompanyByIdDB = async (id) => {
   try {
-    const result = await {{pascalCase module}}.updateOne({ _id: id }, { $set: { isDeleted: true, deletedAt: new Date() } });
+    const result = await Company.updateOne({ _id: id }, { $set: { isDeleted: true, deletedAt: new Date() } });
 
     if (result.modifiedCount === 0) {
       return Responses.notFound;
@@ -82,9 +82,9 @@ const delete{{pascalCase module}}ByIdDB = async (id) => {
 };
 
 module.exports = {
-  getAll{{pascalCase module}}DB,
-  get{{pascalCase module}}ByIdDB,
-  create{{pascalCase module}}DB,
-  update{{pascalCase module}}ByIdDB,
-  delete{{pascalCase module}}ByIdDB,
+  getAllCompanyDB,
+  getCompanyByIdDB,
+  createCompanyDB,
+  updateCompanyByIdDB,
+  deleteCompanyByIdDB,
 };

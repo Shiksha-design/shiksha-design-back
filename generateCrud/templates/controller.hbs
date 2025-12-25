@@ -11,7 +11,7 @@ const { sendResponse } = require('../../utils/sendResponse');
 // GET /api/{{module}}
 const getAll{{pascalCase module}}Data = async (req, res) => {
   try {
-    const data = await getAll{{pascalCase module}}DB(req.user.id);
+    const data = await getAll{{pascalCase module}}DB();
     return sendResponse(req, res, 200, data);
   } catch (error) {
     return sendResponse(req, res, 500, "Failed to fetch data");
@@ -22,7 +22,7 @@ const getAll{{pascalCase module}}Data = async (req, res) => {
 const get{{pascalCase module}}DataById = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = await get{{pascalCase module}}ByIdDB(req.user.id, id);
+    const data = await get{{pascalCase module}}ByIdDB(id);
 
     if (!data) {
       return sendResponse(req, res, 404, "Data not found");
@@ -38,8 +38,8 @@ const get{{pascalCase module}}DataById = async (req, res) => {
 const create{{pascalCase module}}Data = async (req, res) => {
   try {
     const payload = req.body;
-    await create{{pascalCase module}}DB(req.user.id, payload);
-    return sendResponse(req, res, 201, "Data created successfully");
+    const response = await create{{pascalCase module}}DB(payload);
+    return sendResponse(req, res, response.statusCode, response.clientMessage);
   } catch (error) {
     return sendResponse(req, res, 500, "Failed to create data");
   }
@@ -50,8 +50,8 @@ const update{{pascalCase module}}DataById = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = req.body;
-    await update{{pascalCase module}}ByIdDB(req.user.id, id, payload);
-    return sendResponse(req, res, 200, "Data updated successfully");
+    const response = await update{{pascalCase module}}ByIdDB(id, payload);
+    return sendResponse(req, res, response.statusCode, response.clientMessage);
   } catch (error) {
     return sendResponse(req, res, 500, "Failed to update data");
   }
@@ -61,8 +61,8 @@ const update{{pascalCase module}}DataById = async (req, res) => {
 const delete{{pascalCase module}}DataById = async (req, res) => {
   try {
     const { id } = req.params;
-    await delete{{pascalCase module}}ByIdDB(req.user.id, id);
-    return sendResponse(req, res, 200, "Data deleted successfully");
+    const response = await delete{{pascalCase module}}ByIdDB(id);
+    return sendResponse(req, res, response.statusCode, response.clientMessage);
   } catch (error) {
     return sendResponse(req, res, 500, "Failed to delete data");
   }
