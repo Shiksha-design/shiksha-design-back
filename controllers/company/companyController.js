@@ -41,7 +41,7 @@ const createCompanyData = async (req, res) => {
     const companyData = {
       name : payload.name,
       description : payload.description,
-      logoPath : payload.logoPath,
+      fileDetails : req?.file,
       isVisible : payload.isVisible || false,
     }
     const response = await createCompanyDB(companyData);
@@ -59,7 +59,7 @@ const updateCompanyDataById = async (req, res) => {
     const updatedCompanyData = {
       name : payload.name,
       description : payload.description,
-      logoPath : payload.logoPath,
+      fileDetails : req?.file,
       isVisible : payload.isVisible || false,
     }
     const response = await updateCompanyByIdDB(id, updatedCompanyData);

@@ -28,22 +28,22 @@ const createCompanyDB = async (payload) => {
     const company = await Company.create({
       name: payload.name,
       description: payload.description,
-      logo: {}
+      logoDetails : {}
     });
 
     if (!company) return Responses.badRequest;
 
     // save file if exists
-    if (payload.file) {
+    if (payload.fileDetails) {
       const fileResponse = await saveFile(
-        payload.file,
+        payload?.fileDetails,
         'company',
         company._id.toString()
       );
 
       if (!fileResponse.success) return Responses.tryAgain;
 
-      company.logo = fileResponse.fileDetails;
+      company.logoDetails = fileResponse.fileDetails;
       await company.save();
     }
 
@@ -57,7 +57,7 @@ const createCompanyDB = async (payload) => {
 // UPDATE
 const updateCompanyByIdDB = async (id, payload) => {
   try {
-    const company = await Company.findById(id);
+    const company = await getCompanyByIdDB(id);
     if (!company) return Responses.notFound;
 
     const updateData = {
@@ -66,17 +66,17 @@ const updateCompanyByIdDB = async (id, payload) => {
     };
 
     // if new file uploaded
-    if (payload.file) {
+    if (payload.fileDetails) {
       const fileResponse = await editFile(
-        payload.file,
+        payload.fileDetails,
         'company',
         id,
-        company.logo?.filePath
+        company.logoDetails?.filePath
       );
 
       if (!fileResponse.success) return Responses.tryAgain;
 
-      updateData.logo = fileResponse.fileDetails;
+      updateData.logoDetails = fileResponse.fileDetails;
     }
 
     await Company.updateOne({ _id: id }, { $set: updateData });
@@ -93,11 +93,6 @@ const deleteCompanyByIdDB = async (id) => {
   try {
     const company = await Company.findById(id);
     if (!company) return Responses.notFound;
-
-    // delete file if exists
-    if (company.logo?.filePath) {
-      deleteFile(company.logo.filePath);
-    }
 
     await Company.updateOne(
       { _id: id },

@@ -27,7 +27,7 @@ const loginDB = async (email, password) => {
         if (!isPasswordValid) {
             return Responses.validPassword;
         }
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
         return { token, email, id: user.id };
     } catch (error) {
         console.error(error);
