@@ -1,10 +1,11 @@
 const { Responses } = require('../../utils/responses');
+const { saveFile, editFile } = require('../../utils/helper');
 const TopFeatures = require('../../models/topFeatureModel'); // mongoose model
 
 // GET ALL
 const getAllTopFeaturesDB = async (userId) => {
   try {
-    const data = await TopFeatures.find({isDeleted : false}).lean();
+    const data = await TopFeatures.find({ isDeleted: false }).lean();
     return data;
   } catch (error) {
     console.error(error);
@@ -13,7 +14,7 @@ const getAllTopFeaturesDB = async (userId) => {
 };
 
 // GET BY ID
-const getTopFeaturesByIdDB = async (userId, id) => {
+const getTopFeaturesByIdDB = async (id) => {
   try {
     const data = await TopFeatures.findOne({ _id: id }).lean();
 
@@ -31,13 +32,23 @@ const getTopFeaturesByIdDB = async (userId, id) => {
 // CREATE
 const createTopFeaturesDB = async (payload) => {
   try {
-    const data = await TopFeatures.create({
-      ...payload
-    });
+    const tempPayload = {
+      value: payload.value,
+      isVisible: payload.isVisible,
+      fileDetails: {}
+    };
+
+    const data = await TopFeatures.create(tempPayload);
 
     if (!data) {
-      return Responses.badRequest;
+      throw new Error('Failed to create top feature');
     }
+
+    const response = await saveFile(payload.fileDetails, 'topFeature', data._id.toString());
+    if(response.success){
+      data.fileDetails = response.fileDetails;
+    }
+    await data.save();
 
     return Responses.success;
   } catch (error) {
@@ -49,9 +60,32 @@ const createTopFeaturesDB = async (payload) => {
 // UPDATE BY ID
 const updateTopFeaturesByIdDB = async (id, payload) => {
   try {
+    const updateData = {
+      value: payload.value,
+      isVisible: payload.isVisible
+    };
+
+    const oldTopFeature = await getTopFeaturesByIdDB(id);
+
+    // If new file is uploaded → replace old one
+    if (payload.fileDetails) {
+      const fileResponse = await editFile(
+        payload.fileDetails,
+        'topFeature',
+        id,
+        oldTopFeature.fileDetails?.filePath
+      );
+
+      if (!fileResponse.success) {
+        return Responses.tryAgain;
+      }
+
+      updateData.fileDetails = fileResponse.fileDetails;
+    }
+
     const result = await TopFeatures.updateOne(
       { _id: id },
-      { $set: payload }
+      { $set: updateData }
     );
 
     if (result.matchedCount === 0) {
@@ -64,6 +98,7 @@ const updateTopFeaturesByIdDB = async (id, payload) => {
     return Responses.tryAgain;
   }
 };
+
 
 // DELETE BY ID
 const deleteTopFeaturesByIdDB = async (id) => {

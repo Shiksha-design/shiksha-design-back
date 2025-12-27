@@ -22,7 +22,7 @@ const getAllTopFeaturesData = async (req, res) => {
 const getTopFeaturesDataById = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = await getTopFeaturesByIdDB(req.user.id, id);
+    const data = await getTopFeaturesByIdDB(id);
 
     if (!data) {
       return sendResponse(req, res, 404, "Data not found");
@@ -39,13 +39,12 @@ const createTopFeaturesData = async (req, res) => {
   try {
     const payload = req.body;
     const topFeatureData = {
-      iconName: payload.iconName,
-      iconPath: payload.iconPath,
+      fileDetails: req?.file,
       value: payload.value,
       isVisible: payload.isVisible,
     }
-    await createTopFeaturesDB(req.user.id, topFeatureData);
-    return sendResponse(req, res, 201, "Data created successfully");
+    const response = await createTopFeaturesDB(topFeatureData);
+    return sendResponse(req, res, response.statusCode, response.clientMessage);
   } catch (error) {
     return sendResponse(req, res, 500, "Failed to create data");
   }
@@ -57,11 +56,11 @@ const updateTopFeaturesDataById = async (req, res) => {
     const { id } = req.params;
     const payload = req.body;
     const updateTopFeatureData = {
-      iconName: payload?.iconName,
+      fileDetails: req?.file,
       value: payload?.value,
       isVisible: payload?.isVisible,
     }
-    const response = await updateTopFeaturesByIdDB(req.user.id, id, updateTopFeatureData);
+    const response = await updateTopFeaturesByIdDB(id, updateTopFeatureData);
     return sendResponse(req, res, response.statusCode, response.message);
   } catch (error) {
     return sendResponse(req, res, 500, "Failed to update data");
