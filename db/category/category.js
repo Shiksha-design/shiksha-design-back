@@ -4,7 +4,7 @@ const Category = require('../../models/categoryModel'); // mongoose model
 // GET ALL
 const getAllCategoryDB = async () => {
   try {
-    const data = await Category.find({isDeleted : false}).lean();
+    const data = await Category.find({ isDeleted: false }).lean();
     return data;
   } catch (error) {
     console.error(error);
@@ -15,7 +15,7 @@ const getAllCategoryDB = async () => {
 // GET BY ID
 const getCategoryByIdDB = async (id) => {
   try {
-    const data = await Category.findOne({ _id: id, isDeleted : false }).lean();
+    const data = await Category.findOne({ _id: id, isDeleted: false }).lean();
 
     if (!data) {
       return [];

@@ -4,7 +4,7 @@ const Program = require('../../models/programModel'); // mongoose model
 // GET ALL
 const getAllProgramDB = async () => {
   try {
-    const data = await Program.find({isDeleted : false}).lean();
+    const data = await Program.find({ isDeleted: false }).lean();
     return data;
   } catch (error) {
     console.error(error);
@@ -46,22 +46,37 @@ const createProgramDB = async (payload) => {
   }
 };
 
-// UPDATE BY ID
-const updateProgramByIdDB = async (id, payload) => {
+// In db/program/program.js
+const updateProgramByIdDB = async (id, updateData) => {
   try {
-    const result = await Program.updateOne(
-      { _id: id },
-      { $set: payload }
-    );
+    const program = await Program.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).lean();
 
-    if (result.modifiedCount === 0) {
-      return Responses.notFound;
+    if (!program) {
+      return {
+        success: false,
+        statusCode: 404,
+        clientMessage: 'Program not found'
+      };
     }
 
-    return Responses.success;
+    return {
+      success: true,
+      statusCode: 200,
+      clientMessage: 'Program updated successfully',
+      data: program
+    };
   } catch (error) {
-    console.error(error);
-    return Responses.tryAgain;
+    console.error('Error updating program:', error);
+    return {
+      success: false,
+      statusCode: 500,
+      clientMessage: 'Failed to update program',
+      error: error.message
+    };
   }
 };
 

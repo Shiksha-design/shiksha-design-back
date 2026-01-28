@@ -37,37 +37,161 @@ const getProgramDataById = async (req, res) => {
 // POST /api/program
 const createProgramData = async (req, res) => {
   try {
-    const payload = req.body;
-    const programData = {
-      name: payload.name,
-      description: payload.description,
-      duration: payload.duration,
-      categoryId: payload.categoryId,
-      isBestSeller: payload.isBestSeller || false,
+    console.log('Request body:', req.body);
+    console.log('Uploaded files:', req.files);
+
+    if (!req.body.name || !req.body.description || !req.body.duration || !req.body.categoryId) {
+      return sendResponse(req, res, 400, "Missing required fields: name, description, duration, and categoryId are required");
     }
+
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => ({
+        publicId: file.public_id || file.filename,
+        url: file.secure_url || file.path,
+      }));
+    }
+
+    const programData = {
+      name: req.body.name,
+      description: req.body.description,
+      duration: req.body.duration,
+      categoryId: req.body.categoryId,
+      isBestSeller: req.body.isBestSeller === 'true' || req.body.isBestSeller === true,
+      images,
+    };
+
+    console.log('Creating program with data:', programData);
     const response = await createProgramDB(programData);
-    return sendResponse(req, res, response.statusCode, response.clientMessage);
+
+    if (!response) {
+      throw new Error('No response from database');
+    }
+
+    return sendResponse(req, res, response.statusCode || 201, response.clientMessage || 'Program created successfully', response.data);
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to create data");
+    console.error('Error in createProgramData:', error);
+    return sendResponse(
+      req,
+      res,
+      error.statusCode || 500,
+      error.clientMessage || 'Failed to create program',
+      { error: error.message }
+    );
   }
 };
 
-// PUT /api/program/:id
+// In programController.js
+const { cloudinary } = require('../../config/cloudinary');
+
+// Helper function to delete images from Cloudinary
+const deleteCloudinaryImages = async (publicIds) => {
+  if (!publicIds || publicIds.length === 0) return;
+
+  try {
+    await Promise.all(
+      publicIds.map(publicId =>
+        cloudinary.uploader.destroy(publicId)
+      )
+    );
+    console.log('Successfully deleted images from Cloudinary');
+  } catch (error) {
+    console.error('Error deleting images from Cloudinary:', error);
+    // Don't throw the error to prevent the main operation from failing
+  }
+};
+
+// In updateProgramDataById function
 const updateProgramDataById = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = req.body;
+
+    // Get the existing program
+    const existingProgram = await getProgramByIdDB(id);
+    if (!existingProgram) {
+      return sendResponse(req, res, 404, 'Program not found');
+    }
+
+    console.log('Update request body:', payload);
+    console.log('Uploaded files:', req.files);
+
+    // 1. Parse the images to keep from the request
+    let imagesToKeep = [];
+    if (payload.imagesToKeep) {
+      try {
+        imagesToKeep = typeof payload.imagesToKeep === 'string'
+          ? JSON.parse(payload.imagesToKeep)
+          : payload.imagesToKeep;
+
+        if (!Array.isArray(imagesToKeep)) {
+          imagesToKeep = [];
+        }
+      } catch (e) {
+        console.error('Error parsing imagesToKeep:', e);
+        imagesToKeep = [];
+      }
+    }
+
+    // 2. Find and remove any images that were deleted
+    const existingImageIds = new Set(existingProgram.images.map(img => img.publicId));
+    const keptImageIds = new Set(imagesToKeep);
+    const deletedImageIds = [...existingImageIds].filter(id => !keptImageIds.has(id));
+
+    // Delete removed images from Cloudinary
+    if (deletedImageIds.length > 0) {
+      await deleteCloudinaryImages(deletedImageIds);
+    }
+
+    // 3. Handle new file uploads
+    let newImages = [];
+    if (req.files && req.files.length > 0) {
+      newImages = req.files.map(file => ({
+        publicId: file.filename, // Cloudinary public_id
+        url: file.path           // Cloudinary URL
+      }));
+    }
+
+    // 4. Combine kept and new images
+    const keptImages = existingProgram.images.filter(img =>
+      imagesToKeep.includes(img.publicId)
+    );
+
+    const allImages = [...keptImages, ...newImages];
+
+    // 5. Update the program
     const updateProgramData = {
       name: payload.name,
-      description: payload.descriptiproon,
+      description: payload.description,
       duration: payload.duration,
       categoryId: payload.categoryId,
-      isBestSeller: payload.isBestSeller || false,
-    }
+      isBestSeller: payload.isBestSeller === 'true' || payload.isBestSeller === true,
+      images: allImages,
+    };
+
+    console.log('Updating program with data:', updateProgramData);
     const response = await updateProgramByIdDB(id, updateProgramData);
-    return sendResponse(req, res, response.statusCode, response.clientMessage);
+
+    if (!response) {
+      throw new Error('No response from database');
+    }
+
+    return sendResponse(
+      req,
+      res,
+      response.statusCode || 200,
+      response.clientMessage || 'Program updated successfully',
+      response.data
+    );
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to update data");
+    console.error('Error in updateProgramDataById:', error);
+    return sendResponse(
+      req,
+      res,
+      error.statusCode || 500,
+      error.clientMessage || 'Failed to update program',
+      { error: error.message }
+    );
   }
 };
 

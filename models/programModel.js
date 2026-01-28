@@ -5,6 +5,10 @@ const programSchema = new mongoose.Schema({
     description: { type: String, required: true },
     duration: { type: Number, required: true },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'category', required: true },
+    images: [{
+        publicId: { type: String },
+        url: { type: String }
+    }],
     isBestSeller: { type: Boolean, default: false },
     isVisible: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
