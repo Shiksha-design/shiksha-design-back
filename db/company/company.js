@@ -1,13 +1,14 @@
+// db/company/company.js
 const { Responses } = require('../../utils/responses');
 const Company = require('../../models/companyModel');
-const { saveFile, editFile } = require('../../utils/helper'); // same helper
+const { cloudinary } = require('../../config/cloudinary');
 
 // GET ALL
 const getAllCompanyDB = async () => {
   try {
-    return await Company.find({ isDeleted: false }).lean();
+    return await Company.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
   } catch (error) {
-    console.error(error);
+    console.error('Error in getAllCompanyDB:', error);
     return [];
   }
 };
@@ -17,7 +18,7 @@ const getCompanyByIdDB = async (id) => {
   try {
     return await Company.findOne({ _id: id, isDeleted: false }).lean();
   } catch (error) {
-    console.error(error);
+    console.error('Error in getCompanyByIdDB:', error);
     return null;
   }
 };
@@ -25,84 +26,81 @@ const getCompanyByIdDB = async (id) => {
 // CREATE
 const createCompanyDB = async (payload) => {
   try {
-    const company = await Company.create({
-      name: payload.name,
-      description: payload.description,
-      logoDetails : {}
-    });
-
-    if (!company) return Responses.badRequest;
-
-    // save file if exists
-    if (payload.fileDetails) {
-      const fileResponse = await saveFile(
-        payload?.fileDetails,
-        'company',
-        company._id.toString()
-      );
-
-      if (!fileResponse.success) return Responses.tryAgain;
-
-      company.logoDetails = fileResponse.fileDetails;
-      await company.save();
-    }
-
-    return Responses.success;
+    const company = await Company.create(payload);
+    return {
+      ...Responses.success,
+      data: company
+    };
   } catch (error) {
-    console.error(error);
-    return Responses.tryAgain;
+    console.error('Error in createCompanyDB:', error);
+    return {
+      ...Responses.tryAgain,
+      error: error.message
+    };
   }
 };
 
 // UPDATE
 const updateCompanyByIdDB = async (id, payload) => {
   try {
-    const company = await getCompanyByIdDB(id);
-    if (!company) return Responses.notFound;
+    const company = await Company.findByIdAndUpdate(
+      id,
+      { $set: payload },
+      { new: true, runValidators: true }
+    ).lean();
 
-    const updateData = {
-      name: payload.name,
-      description: payload.description
-    };
-
-    // if new file uploaded
-    if (payload.fileDetails) {
-      const fileResponse = await editFile(
-        payload.fileDetails,
-        'company',
-        id,
-        company.logoDetails?.filePath
-      );
-
-      if (!fileResponse.success) return Responses.tryAgain;
-
-      updateData.logoDetails = fileResponse.fileDetails;
+    if (!company) {
+      return Responses.notFound;
     }
 
-    await Company.updateOne({ _id: id }, { $set: updateData });
-
-    return Responses.success;
+    return {
+      ...Responses.success,
+      data: company
+    };
   } catch (error) {
-    console.error(error);
-    return Responses.tryAgain;
+    console.error('Error in updateCompanyByIdDB:', error);
+    return {
+      ...Responses.tryAgain,
+      error: error.message
+    };
   }
 };
 
-// DELETE (soft delete + file cleanup)
+// DELETE (soft delete)
 const deleteCompanyByIdDB = async (id) => {
   try {
-    const company = await Company.findById(id);
-    if (!company) return Responses.notFound;
+    const company = await Company.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date()
+        }
+      },
+      { new: true }
+    ).lean();
 
-    await Company.updateOne(
-      { _id: id },
-      { $set: { isDeleted: true, deletedAt: new Date() } }
-    );
+    if (!company) {
+      return Responses.notFound;
+    }
+
+    // Delete image from Cloudinary if exists
+    if (company.image?.publicId) {
+      try {
+        await cloudinary.uploader.destroy(company.image.publicId);
+      } catch (err) {
+        console.error('Error deleting image from Cloudinary:', err);
+        // Continue with deletion even if image deletion fails
+      }
+    }
 
     return Responses.success;
   } catch (error) {
-    console.error(error);
-    return Responses.tryAgain;
+    console.error('Error in deleteCompanyByIdDB:', error);
+    return {
+      ...Responses.tryAgain,
+      error: error.message
+    };
   }
 };
 

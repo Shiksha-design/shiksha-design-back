@@ -5,8 +5,19 @@ const {
   updateCompanyByIdDB,
   deleteCompanyByIdDB
 } = require('../../db/company/company');
-
+const { cloudinary } = require('../../config/cloudinary');
 const { sendResponse } = require('../../utils/sendResponse');
+
+// Helper function to delete image from Cloudinary
+const deleteCloudinaryImage = async (publicId) => {
+  if (!publicId) return;
+  try {
+    await cloudinary.uploader.destroy(publicId);
+    console.log('Successfully deleted image from Cloudinary');
+  } catch (error) {
+    console.error('Error deleting image from Cloudinary:', error);
+  }
+};
 
 // GET /api/company
 const getAllCompanyData = async (req, res) => {
@@ -14,7 +25,8 @@ const getAllCompanyData = async (req, res) => {
     const data = await getAllCompanyDB();
     return sendResponse(req, res, 200, data);
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to fetch data");
+    console.error('Error in getAllCompanyData:', error);
+    return sendResponse(req, res, 500, "Failed to fetch companies");
   }
 };
 
@@ -25,12 +37,13 @@ const getCompanyDataById = async (req, res) => {
     const data = await getCompanyByIdDB(id);
 
     if (!data) {
-      return sendResponse(req, res, 404, "Data not found");
+      return sendResponse(req, res, 404, "Company not found");
     }
 
     return sendResponse(req, res, 200, data);
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to fetch data by ID");
+    console.error('Error in getCompanyDataById:', error);
+    return sendResponse(req, res, 500, "Failed to fetch company");
   }
 };
 
@@ -38,16 +51,40 @@ const getCompanyDataById = async (req, res) => {
 const createCompanyData = async (req, res) => {
   try {
     const payload = req.body;
-    const companyData = {
-      name : payload.name,
-      description : payload.description,
-      fileDetails : req?.file,
-      isVisible : payload.isVisible || false,
+
+    // Handle file upload
+    let imageData = null;
+    if (req.file) {
+      imageData = {
+        publicId: req.file.filename,
+        url: req.file.path
+      };
     }
+
+    const companyData = {
+      name: payload.name,
+      description: payload.description,
+      image: imageData,
+      isVisible: payload.isVisible === 'true' || payload.isVisible === true
+    };
+
     const response = await createCompanyDB(companyData);
-    return sendResponse(req, res, response.statusCode, response.clientMessage);
+    return sendResponse(
+      req,
+      res,
+      response.statusCode || 201,
+      response.clientMessage || 'Company created successfully',
+      response.data
+    );
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to create data");
+    console.error('Error in createCompanyData:', error);
+    return sendResponse(
+      req,
+      res,
+      error.statusCode || 500,
+      error.clientMessage || 'Failed to create company',
+      { error: error.message }
+    );
   }
 };
 
@@ -56,16 +93,58 @@ const updateCompanyDataById = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = req.body;
-    const updatedCompanyData = {
-      name : payload.name,
-      description : payload.description,
-      fileDetails : req?.file,
-      isVisible : payload.isVisible || false,
+
+    // Get existing company to check for image changes
+    const existingCompany = await getCompanyByIdDB(id);
+    if (!existingCompany) {
+      return sendResponse(req, res, 404, 'Company not found');
     }
+
+    // Handle file upload/update
+    let imageData = existingCompany.image || null;
+    if (req.file) {
+      // If there was a previous image, delete it from Cloudinary
+      if (imageData?.publicId) {
+        await deleteCloudinaryImage(imageData.publicId);
+      }
+
+      // Set the new image data
+      imageData = {
+        publicId: req.file.filename,
+        url: req.file.path
+      };
+    } else if (payload.removeImage === 'true') {
+      // If explicitly asked to remove image
+      if (imageData?.publicId) {
+        await deleteCloudinaryImage(imageData.publicId);
+      }
+      imageData = null;
+    }
+
+    const updatedCompanyData = {
+      name: payload.name,
+      description: payload.description,
+      image: imageData,
+      isVisible: payload.isVisible === 'true' || payload.isVisible === true
+    };
+
     const response = await updateCompanyByIdDB(id, updatedCompanyData);
-    return sendResponse(req, res, response.statusCode, response.clientMessage);
+    return sendResponse(
+      req,
+      res,
+      response.statusCode || 200,
+      response.clientMessage || 'Company updated successfully',
+      response.data
+    );
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to update data");
+    console.error('Error in updateCompanyDataById:', error);
+    return sendResponse(
+      req,
+      res,
+      error.statusCode || 500,
+      error.clientMessage || 'Failed to update company',
+      { error: error.message }
+    );
   }
 };
 
@@ -73,10 +152,34 @@ const updateCompanyDataById = async (req, res) => {
 const deleteCompanyDataById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Get company to delete its image
+    const company = await getCompanyByIdDB(id);
+    if (!company) {
+      return sendResponse(req, res, 404, 'Company not found');
+    }
+
+    // Delete image from Cloudinary if exists
+    if (company.image?.publicId) {
+      await deleteCloudinaryImage(company.image.publicId);
+    }
+
     const response = await deleteCompanyByIdDB(id);
-    return sendResponse(req, res, response.statusCode, response.clientMessage);
+    return sendResponse(
+      req,
+      res,
+      response.statusCode || 200,
+      response.clientMessage || 'Company deleted successfully'
+    );
   } catch (error) {
-    return sendResponse(req, res, 500, "Failed to delete data");
+    console.error('Error in deleteCompanyDataById:', error);
+    return sendResponse(
+      req,
+      res,
+      error.statusCode || 500,
+      error.clientMessage || 'Failed to delete company',
+      { error: error.message }
+    );
   }
 };
 
