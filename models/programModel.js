@@ -4,6 +4,7 @@ const programSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     description: { type: String, required: true },
     duration: { type: Number, required: true },
+    startDate: { type: Date, required: true },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'category', required: true },
     images: [{
         publicId: { type: String },

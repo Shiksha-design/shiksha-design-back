@@ -40,8 +40,8 @@ const createProgramData = async (req, res) => {
     console.log('Request body:', req.body);
     console.log('Uploaded files:', req.files);
 
-    if (!req.body.name || !req.body.description || !req.body.duration || !req.body.categoryId) {
-      return sendResponse(req, res, 400, "Missing required fields: name, description, duration, and categoryId are required");
+    if (!req.body.name || !req.body.description || !req.body.duration || !req.body.categoryId || !req.body.startDate) {
+      return sendResponse(req, res, 400, "Missing required fields: name, description, duration, startDate, and categoryId are required");
     }
 
     let images = [];
@@ -56,6 +56,7 @@ const createProgramData = async (req, res) => {
       name: req.body.name,
       description: req.body.description,
       duration: req.body.duration,
+      startDate: new Date(req.body.startDate),
       categoryId: req.body.categoryId,
       isBestSeller: req.body.isBestSeller === 'true' || req.body.isBestSeller === true,
       images,
@@ -164,6 +165,7 @@ const updateProgramDataById = async (req, res) => {
       name: payload.name,
       description: payload.description,
       duration: payload.duration,
+      startDate: payload.startDate ? new Date(payload.startDate) : existingProgram.startDate,
       categoryId: payload.categoryId,
       isBestSeller: payload.isBestSeller === 'true' || payload.isBestSeller === true,
       images: allImages,

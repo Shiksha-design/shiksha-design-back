@@ -8,17 +8,6 @@ const {
 const { cloudinary } = require('../../config/cloudinary');
 const { sendResponse } = require('../../utils/sendResponse');
 
-// Helper function to delete image from Cloudinary
-const deleteCloudinaryImage = async (publicId) => {
-  if (!publicId) return;
-  try {
-    await cloudinary.uploader.destroy(publicId);
-    console.log('Successfully deleted image from Cloudinary');
-  } catch (error) {
-    console.error('Error deleting image from Cloudinary:', error);
-  }
-};
-
 // GET /api/company
 const getAllCompanyData = async (req, res) => {
   try {
@@ -61,8 +50,16 @@ const createCompanyData = async (req, res) => {
       };
     }
 
+    // Validate required fields
+    if (!payload.email || !payload.phoneNumber || !payload.address) {
+      return sendResponse(req, res, 400, 'Email, phone number, and address are required');
+    }
+
     const companyData = {
       name: payload.name,
+      address: payload.address,
+      email: payload.email,
+      phoneNumber: payload.phoneNumber,
       description: payload.description,
       image: imageData,
       isVisible: payload.isVisible === 'true' || payload.isVisible === true
@@ -121,8 +118,16 @@ const updateCompanyDataById = async (req, res) => {
       imageData = null;
     }
 
+    // Validate required fields
+    if (!payload.email || !payload.phoneNumber || !payload.address) {
+      return sendResponse(req, res, 400, 'Email, phone number, and address are required');
+    }
+
     const updatedCompanyData = {
       name: payload.name,
+      address: payload.address,
+      email: payload.email,
+      phoneNumber: payload.phoneNumber,
       description: payload.description,
       image: imageData,
       isVisible: payload.isVisible === 'true' || payload.isVisible === true
