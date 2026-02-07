@@ -5,7 +5,7 @@ const {
   updateProgramByIdDB,
   deleteProgramByIdDB
 } = require('../../db/program/program');
-
+const { uploadOrUpdateImages } = require('../../utils/cloudinaryUtil');
 const { sendResponse } = require('../../utils/sendResponse');
 
 // GET /api/program
@@ -46,10 +46,10 @@ const createProgramData = async (req, res) => {
 
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map(file => ({
-        publicId: file.public_id || file.filename,
-        url: file.secure_url || file.path,
-      }));
+      images = await uploadOrUpdateImages({
+        files: req.files,
+        folder: 'job-postings'
+      });
     }
 
     const programData = {
@@ -59,7 +59,7 @@ const createProgramData = async (req, res) => {
       startDate: new Date(req.body.startDate),
       categoryId: req.body.categoryId,
       isBestSeller: req.body.isBestSeller === 'true' || req.body.isBestSeller === true,
-      images,
+      images: Array.isArray(images) ? images : [images]
     };
 
     console.log('Creating program with data:', programData);
@@ -82,26 +82,6 @@ const createProgramData = async (req, res) => {
   }
 };
 
-// In programController.js
-const { cloudinary } = require('../../config/cloudinary');
-
-// Helper function to delete images from Cloudinary
-const deleteCloudinaryImages = async (publicIds) => {
-  if (!publicIds || publicIds.length === 0) return;
-
-  try {
-    await Promise.all(
-      publicIds.map(publicId =>
-        cloudinary.uploader.destroy(publicId)
-      )
-    );
-    console.log('Successfully deleted images from Cloudinary');
-  } catch (error) {
-    console.error('Error deleting images from Cloudinary:', error);
-    // Don't throw the error to prevent the main operation from failing
-  }
-};
-
 // In updateProgramDataById function
 const updateProgramDataById = async (req, res) => {
   try {
@@ -117,48 +97,14 @@ const updateProgramDataById = async (req, res) => {
     console.log('Update request body:', payload);
     console.log('Uploaded files:', req.files);
 
-    // 1. Parse the images to keep from the request
-    let imagesToKeep = [];
-    if (payload.imagesToKeep) {
-      try {
-        imagesToKeep = typeof payload.imagesToKeep === 'string'
-          ? JSON.parse(payload.imagesToKeep)
-          : payload.imagesToKeep;
-
-        if (!Array.isArray(imagesToKeep)) {
-          imagesToKeep = [];
-        }
-      } catch (e) {
-        console.error('Error parsing imagesToKeep:', e);
-        imagesToKeep = [];
-      }
-    }
-
-    // 2. Find and remove any images that were deleted
-    const existingImageIds = new Set(existingProgram.images.map(img => img.publicId));
-    const keptImageIds = new Set(imagesToKeep);
-    const deletedImageIds = [...existingImageIds].filter(id => !keptImageIds.has(id));
-
-    // Delete removed images from Cloudinary
-    if (deletedImageIds.length > 0) {
-      await deleteCloudinaryImages(deletedImageIds);
-    }
-
-    // 3. Handle new file uploads
-    let newImages = [];
+    let images = [];
     if (req.files && req.files.length > 0) {
-      newImages = req.files.map(file => ({
-        publicId: file.filename, // Cloudinary public_id
-        url: file.path           // Cloudinary URL
-      }));
+      images = await uploadOrUpdateImages({
+        files: req.files,
+        oldImages: existingProgram.images,
+        folder: 'job-postings'
+      });
     }
-
-    // 4. Combine kept and new images
-    const keptImages = existingProgram.images.filter(img =>
-      imagesToKeep.includes(img.publicId)
-    );
-
-    const allImages = [...keptImages, ...newImages];
 
     // 5. Update the program
     const updateProgramData = {
@@ -168,7 +114,7 @@ const updateProgramDataById = async (req, res) => {
       startDate: payload.startDate ? new Date(payload.startDate) : existingProgram.startDate,
       categoryId: payload.categoryId,
       isBestSeller: payload.isBestSeller === 'true' || payload.isBestSeller === true,
-      images: allImages,
+      images: Array.isArray(images) ? images : [images],
     };
 
     console.log('Updating program with data:', updateProgramData);

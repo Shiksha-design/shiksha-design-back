@@ -7,6 +7,9 @@ const programSchema = new mongoose.Schema({
     startDate: { type: Date, required: true },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'category', required: true },
     images: [{
+        filename: { type: String, default: '' },
+        mimetype: { type: String, default: '' },
+        size: { type: Number, default: 0 },
         publicId: { type: String },
         url: { type: String }
     }],

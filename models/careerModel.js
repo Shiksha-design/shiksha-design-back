@@ -12,7 +12,10 @@ const jobPostingSchema = new mongoose.Schema({
     requirements: [{ type: String, required: true }],
 
     // Media
-    image: {
+    images: {
+        filename: { type: String, default: '' },
+        mimetype: { type: String, default: '' },
+        size: { type: Number, default: 0 },
         publicId: { type: String, default: '' },
         url: { type: String, default: '' }
     },

@@ -8,6 +8,7 @@ const {
     deleteJobPostingDb,
     searchJobPostingsDb
 } = require("../../db/career/career");
+const { uploadOrUpdateImages } = require("../../utils/cloudinaryUtil");
 
 const addJobPosting = async (req, res) => {
     try {
@@ -19,10 +20,10 @@ const addJobPosting = async (req, res) => {
         }
 
         if (req.files && req.files.length > 0) {
-            jobData.image = req.files.map(file => ({
-                publicId: file.public_id || file.filename,
-                url: file.secure_url || file.path,
-            }));
+            jobData.images = await uploadOrUpdateImages({
+                files: req.files,
+                folder: 'job-postings'
+            });
         }
 
         const result = await addJobPostingDb(jobData);
@@ -57,21 +58,10 @@ const getJobPostingById = async (req, res) => {
             return sendResponse(req, res, 404, 'Job posting not found');
         }
 
-        return sendResponse(
-            req,
-            res,
-            200,
-            'Job posting retrieved successfully',
-            result.data
-        );
+        return sendResponse(req, res, 200, result);
     } catch (error) {
         console.error('Error in getJobPostingById:', error);
-        return sendResponse(
-            req,
-            res,
-            500,
-            'Failed to retrieve job posting'
-        );
+        return sendResponse(req, res, 500, "Failed to retrieve job posting");
     }
 };
 
@@ -80,47 +70,47 @@ const updateJobPosting = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        const result = await updateJobPostingDb(id, updateData);
-
-        if (result.statusCode === 404) {
+        const existingJob = await getJobPostingByIdDb(id);
+        if (existingJob.statusCode === 404) {
             return sendResponse(req, res, 404, 'Job posting not found');
         }
 
-        return sendResponse(req, res, 200, 'Job posting updated successfully', result.data);
+        if (req.files && req.files.length > 0) {
+            updateData.images = await uploadOrUpdateImages({
+                files: req.files,
+                oldImages: existingJob.images,
+                folder: 'job-postings'
+            });
+        }
+
+        const response = await updateJobPostingDb(id, updateData);
+        return sendResponse(req, res, response.statusCode, response.clientMessage);
     } catch (error) {
         console.error('Error in updateJobPosting:', error);
-        return sendResponse(
-            req,
-            res,
-            500,
-            'Failed to update job posting'
-        );
+        return sendResponse(req, res, 500, "Failed to update job posting");
+
     }
 };
 
 const deleteJobPosting = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await deleteJobPostingDb(id);
-
-        if (result.statusCode === 404) {
+        const existingJob = await getJobPostingByIdDb(id);
+        if (existingJob.statusCode === 404) {
             return sendResponse(req, res, 404, 'Job posting not found');
         }
 
-        return sendResponse(
-            req,
-            res,
-            200,
-            'Job posting deleted successfully'
-        );
+        if (existingJob.images) {
+            await deleteImages(existingJob.images);
+        }
+
+        const response = await deleteJobPostingDb(id);
+
+        return sendResponse(req, res, response.statusCode, response.clientMessage);
     } catch (error) {
         console.error('Error in deleteJobPosting:', error);
-        return sendResponse(
-            req,
-            res,
-            500,
-            'Failed to delete job posting'
-        );
+        return sendResponse(req, res, 500, "Failed to delete job posting");
+
     }
 };
 
@@ -142,12 +132,7 @@ const searchJobPostings = async (req, res) => {
         );
     } catch (error) {
         console.error('Error in searchJobPostings:', error);
-        return sendResponse(
-            req,
-            res,
-            500,
-            'Failed to search job postings'
-        );
+        return sendResponse(req, res, 500, "Failed to search job postings");
     }
 };
 

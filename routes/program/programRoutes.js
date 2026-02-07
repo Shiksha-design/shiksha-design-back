@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const programController = require('../../controllers/program/programController');
-const { handleFileUpload, handleUploadErrors } = require('../../middlewares/uploadProgramImages');
+const { uploadProgramImages } = require('../../middlewares/uploadMiddleware');
 const { authMiddleware } = require('../../middlewares/authMiddleware');
 
 // Public routes
@@ -9,10 +9,10 @@ router.get('/', programController.getAllProgramData);
 router.get('/:id', programController.getProgramDataById);
 
 // Create program route with file uploads
-router.post('/create', handleFileUpload, programController.createProgramData);
+router.post('/create', uploadProgramImages, programController.createProgramData);
 
 // Other routes
-router.put('/:id', handleFileUpload, programController.updateProgramDataById);
+router.put('/:id', uploadProgramImages, programController.updateProgramDataById);
 router.delete('/:id', programController.deleteProgramDataById);
 
 // Error handling middleware for file uploads
