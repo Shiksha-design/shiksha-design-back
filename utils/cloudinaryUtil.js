@@ -75,7 +75,63 @@ const deleteImages = async (images) => {
     }
 };
 
+const uploadOrUpdateVideos = async ({ files, folder, oldVideos = null }) => {
+    try {
+        // Delete old videos if they exist
+        if (oldVideos && oldVideos.length > 0) {
+            await Promise.all(
+                oldVideos.map(video => {
+                    if (video && video.publicId) {
+                        return cloudinary.uploader.destroy(video.publicId, {
+                            resource_type: 'video'
+                        });
+                    }
+                })
+            );
+        }
+
+        // Upload new videos
+        const uploadPromises = files.map(file => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        resource_type: 'video',
+                        folder: folder,
+                        public_id: `${folder}-${Date.now()}-${file.originalname.split('.')[0]}`,
+                        chunk_size: 6000000, // 6MB chunks for better handling of large files
+                        eager: [
+                            { width: 1280, height: 720, crop: 'scale' },
+                            { width: 854, height: 480, crop: 'scale' }
+                        ]
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error('Error uploading video to Cloudinary:', error);
+                            return reject(error);
+                        }
+                        resolve({
+                            filename: file.originalname,
+                            mimetype: file.mimetype,
+                            size: file.size,
+                            publicId: result.public_id,
+                            url: result.secure_url
+                        });
+                    }
+                );
+
+                stream.end(file.buffer);
+            });
+        });
+
+        return await Promise.all(uploadPromises);
+    } catch (error) {
+        console.error('Error in uploadOrUpdateVideos:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     uploadOrUpdateImages,
     deleteImages,
+    uploadOrUpdateVideos
 };

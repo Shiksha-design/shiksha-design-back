@@ -4,10 +4,11 @@ const topFeaturesRoutes = require("../routes/topFeatures/topFeaturesRoutes");
 const categoryRoutes = require("../routes/category/categoryRoutes");
 const programRoutes = require("../routes/program/programRoutes");
 const companyRoutes = require("../routes/company/companyRoutes");
-const contactusRoutes = require("../routes/contactus/consactusRoutes");
 const { authMiddleware } = require('../middlewares/authMiddleware');
-const { uploadSingle, uploadMultiple } = require('../middlewares/multerConfig');
 const careerRoutes = require("../routes/career/careerRoutes");
+const staticPageRoutes = require("../routes/staticPage/staticPageRoutes");
+const teamMemberRoutes = require("../routes/teamMembers/teamMemberRoutes");
+const faqRoutes = require("./faq/faqRoutes");
 
 const router = express.Router();
 
@@ -16,7 +17,8 @@ router.use('/topFeatures', authMiddleware, topFeaturesRoutes);
 router.use('/category', authMiddleware, categoryRoutes);
 router.use('/program', authMiddleware, programRoutes);
 router.use('/company', authMiddleware, companyRoutes);
-router.use('/contactus', authMiddleware, contactusRoutes);
 router.use('/career', authMiddleware, careerRoutes);
-
+router.use('/staticPages', authMiddleware, staticPageRoutes);
+router.use('/teamMember', authMiddleware, teamMemberRoutes);
+router.use('/faq', authMiddleware, faqRoutes);
 module.exports = router;
