@@ -1,17 +1,18 @@
 
 const { sendResponse } = require("../../utils/sendResponse");
-const { loginDB, signupDB } = require("../../db/auth/auth");
+const { contactAdminDb } = require("../../db/contactus/contactus");
 
 //create login with email and password and jwt token
-const signup = async (req, res) => {
+const contactAdmin = async (req, res) => {
     try {
-        const { fullName, email, password } = req.body;
+        const { name, email, phoneNumber, query } = req.body;
         const userData = {
-            fullName : fullName,
+            name : name,
             email : email,
-            password : password
+            phoneNumber : phoneNumber,
+            query : query
         }
-        const info = await signupDB(userData);
+        const info = await contactAdminDb(userData);
         return sendResponse(req, res, info.statusCode, info.clientMessage);
     } catch (e) {
         console.error(e);
@@ -19,20 +20,6 @@ const signup = async (req, res) => {
     }
 };
 
-//create login with email and password and jwt token
-const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        const info = await loginDB(email, password);
-        return sendResponse(req, res, 200, info);
-    } catch (e) {
-        console.error(e);
-        return sendResponse(req, res, 500, { Message: e.message });
-    }
-};
-
 module.exports = {
-    login,
-    signup
+    contactAdmin
 };

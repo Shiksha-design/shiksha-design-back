@@ -5,6 +5,7 @@ const {
     deleteStaticPage
 } = require('../../db/staticPage/staticPageDb');
 const { sendResponse } = require('../../utils/sendResponse');
+const StaticPage = require('../../models/staticPageModel');
 const { uploadOrUpdateImages, uploadOrUpdateVideos } = require('../../utils/cloudinaryUtil');
 
 // Create or update a static page
@@ -124,7 +125,7 @@ const uploadAboutUsVideo = async (req, res) => {
 
         // Update the about page with the new video
         const updateData = {
-            video: uploadedVideo,
+            videos: [uploadedVideo],
             update: Date.now()
         };
 
@@ -193,7 +194,6 @@ const getAllPages = async (req, res) => {
             req,
             res,
             result.statusCode || 200,
-            'Pages retrieved successfully',
             result.data || []
         );
     } catch (error) {

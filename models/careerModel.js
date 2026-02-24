@@ -5,11 +5,11 @@ const jobPostingSchema = new mongoose.Schema({
     jobRole: { type: String, required: true, trim: true },
     jobType: { type: String, required: true, enum: ['Full Time', 'Part Time', 'Contract', 'Internship'], trim: true },
     jobLocation: { type: String, required: true, enum: ['On-site', 'Remote', 'Hybrid'], trim: true },
-    jobDescription: { type: String, required: true, trim: true },
+    jobDescription: [{ type: String, required: true, default: [] }],
 
     // Job Details
-    responsibilities: [{ type: String, required: true }],
-    requirements: [{ type: String, required: true }],
+    responsibilities: [{ type: String, required: true, default: [] }],
+    requirements: [{ type: String, required: true, default: [] }],
 
     // Media
     images: {

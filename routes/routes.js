@@ -9,6 +9,7 @@ const careerRoutes = require("../routes/career/careerRoutes");
 const staticPageRoutes = require("../routes/staticPage/staticPageRoutes");
 const teamMemberRoutes = require("../routes/teamMembers/teamMemberRoutes");
 const faqRoutes = require("./faq/faqRoutes");
+const contactusRoutes = require("./contactus/contactusRoutes");
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.use('/program', authMiddleware, programRoutes);
 router.use('/company', authMiddleware, companyRoutes);
 router.use('/career', authMiddleware, careerRoutes);
 router.use('/staticPages', authMiddleware, staticPageRoutes);
+router.use('/contactus', authMiddleware, contactusRoutes);
 router.use('/teamMember', authMiddleware, teamMemberRoutes);
 router.use('/faq', authMiddleware, faqRoutes);
 module.exports = router;

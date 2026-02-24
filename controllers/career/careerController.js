@@ -14,6 +14,31 @@ const addJobPosting = async (req, res) => {
     try {
         const jobData = req.body;
 
+        // Parse stringified arrays
+        if (jobData.jobDescription && typeof jobData.jobDescription === 'string') {
+            try {
+                jobData.jobDescription = JSON.parse(jobData.jobDescription);
+            } catch (error) {
+                return sendResponse(req, res, 400, 'Invalid jobDescription format');
+            }
+        }
+
+        if (jobData.responsibilities && typeof jobData.responsibilities === 'string') {
+            try {
+                jobData.responsibilities = JSON.parse(jobData.responsibilities);
+            } catch (error) {
+                return sendResponse(req, res, 400, 'Invalid responsibilities format');
+            }
+        }
+
+        if(jobData.requirements && typeof jobData.requirements === 'string') {
+            try {
+                jobData.requirements = JSON.parse(jobData.requirements);
+            } catch (error) {
+                return sendResponse(req, res, 400, 'Invalid requirements format');
+            }
+        }
+
         // Basic validation
         if (!jobData.jobRole || !jobData.jobType || !jobData.jobLocation || !jobData.jobDescription) {
             return sendResponse(req, res, 400, 'Missing required fields');
@@ -69,6 +94,31 @@ const updateJobPosting = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
+
+        // Parse stringified arrays
+        if (updateData.jobDescription && typeof updateData.jobDescription === 'string') {
+            try {
+                updateData.jobDescription = JSON.parse(updateData.jobDescription);
+            } catch (error) {
+                return sendResponse(req, res, 400, 'Invalid jobDescription format');
+            }
+        }
+
+        if (updateData.responsibilities && typeof updateData.responsibilities === 'string') {
+            try {
+                updateData.responsibilities = JSON.parse(updateData.responsibilities);
+            } catch (error) {
+                return sendResponse(req, res, 400, 'Invalid responsibilities format');
+            }
+        }
+
+        if(updateData.requirements && typeof updateData.requirements === 'string') {
+            try {
+                updateData.requirements = JSON.parse(updateData.requirements);
+            } catch (error) {
+                return sendResponse(req, res, 400, 'Invalid requirements format');
+            }
+        }
 
         const existingJob = await getJobPostingByIdDb(id);
         if (existingJob.statusCode === 404) {

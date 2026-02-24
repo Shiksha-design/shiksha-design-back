@@ -29,6 +29,7 @@ const staticPageSchema = new mongoose.Schema({
 
     //common fields
     images: imageSchema,
+    videos: imageSchema,
 
     // contact page specific fields
     email: String,

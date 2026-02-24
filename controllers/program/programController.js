@@ -62,7 +62,6 @@ const createProgramData = async (req, res) => {
       images: Array.isArray(images) ? images : [images]
     };
 
-    console.log('Creating program with data:', programData);
     const response = await createProgramDB(programData);
 
     if (!response) {
